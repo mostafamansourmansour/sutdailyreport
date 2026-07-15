@@ -5,3 +5,6 @@ compatibility_date = "2026-05-01"
 [[kv_namespaces]]
 binding = "REPORTS_KV"
 id = "eb6a8268d7a44464a4a032c5f15e868e"
+
+[vars]
+UPLOAD_PASSWORD = "SUT2026"
