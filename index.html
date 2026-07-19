@@ -320,8 +320,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <div class="card" style="margin-top:32px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
         <div>
-          <h3>Achieved vs. realistic target vs. set target</h3>
-          <p class="cnote" id="threeWayNote">Actual on the Submitted stage · realistic = trend projection · set = 1,300 goal</p>
+          <h3>Where we are vs. what each enrolment target needs</h3>
+          <p class="cnote" id="threeWayNote">Submitted so far vs. what's needed to enrol 1,050 and 1,300 · based on last year (2141 → 850 enrolled)</p>
         </div>
         <div class="seg" id="actualToggle">
           <button class="seg-btn on" data-basis="submitted">Submitted</button>
@@ -789,17 +789,25 @@ function renderTarget(){
 
 /* ---------------- 3-way: achieved vs realistic vs set target ---------------- */
 let threeWayChart, actualBasis='submitted';
+/* Historical season-total ratios (2025): to enrol 850 students the funnel needed
+   2141 Submitted and 902 Down payment (down payment + 1st installment).
+   We use these ratios to show how many Submitted / Down payment this year would
+   need to hit the 1,050 and 1,300 enrolment targets. */
+const SEASON_RATIO={ submitted:2141/850, downpay:902/850 };
+const ENROL_GOALS=[1050,1300];
 function renderThreeWay(){
-  const t=computeTarget();
   const basis = actualBasis;
   const actual = basis==='downpay'
       ? stageVal('Down payment',0)
       : stageVal('Submitted',0);
+  const ratio = SEASON_RATIO[basis];
+  const need = ENROL_GOALS.map(g=>Math.round(g*ratio));
+  const stageName = basis==='downpay'?'Down payment':'Submitted';
   document.getElementById('threeWayNote').textContent =
-    `Actual on the ${basis==='downpay'?'Down payment':'Submitted'} stage · realistic = trend projection (${fmt(t.projection)}) · set = ${fmt(t.target)} goal`;
+    `${stageName} so far vs. what's needed to enrol 1,050 and 1,300 · based on last year (${basis==='downpay'?'902':'2141'} → 850 enrolled)`;
 
-  const labels=['Achieved','Realistic target','Set target'];
-  const values=[actual, t.projection, t.target];
+  const labels=['Achieved','For 1,050 enrolled','For 1,300 enrolled'];
+  const values=[actual, need[0], need[1]];
   const ink='#0F1E33', gold='#B8892B', goldSoft='#E4C878';
   const colors=[ink, gold, goldSoft];
 
@@ -810,7 +818,7 @@ function renderThreeWay(){
       barPercentage:.6,categoryPercentage:.7}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},
-        tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+' students'}}},
+        tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+' '+(actualBasis==='downpay'?'down payments':'submitted')}}},
       scales:{x:{grid:{display:false},ticks:{font:{size:12,weight:'600'}}},
         y:{grid:{color:'#DAD3C2'},ticks:{font:{size:11}},beginAtZero:true}}},
     plugins:[{id:'valueLabels',afterDatasetsDraw(ch){
