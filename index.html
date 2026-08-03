@@ -93,8 +93,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .status.err{color:#F0A48C}
 
   .band{background:var(--ink-2);color:var(--paper);border-bottom:1px solid rgba(255,255,255,.08)}
-  .band .wrap{display:grid;grid-template-columns:repeat(6,1fr);gap:0}
-  .kpi{padding:22px 18px;border-right:1px solid rgba(255,255,255,.09)}
+  .band .wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0}
+  .kpi{padding:22px 18px;border-right:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
   .kpi:last-child{border-right:none}
   .kpi .lab{font-family:'Roboto Mono','SF Mono',Consolas,'Courier New',monospace;font-size:10.5px;letter-spacing:.14em;
     text-transform:uppercase;color:#9FB0C4;margin-bottom:8px}
@@ -261,8 +261,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
   @media(max-width:860px){
-    .band .wrap{grid-template-columns:repeat(3,1fr)}
-    .kpi{border-bottom:1px solid rgba(255,255,255,.09)}
     .kpi .val{font-size:27px}
     .grid2{grid-template-columns:1fr}
     .conv{grid-template-columns:repeat(2,1fr)}
@@ -383,6 +381,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <button class="seg-btn on" data-metric="submitted">Submitted</button>
         <button class="seg-btn" data-metric="fees">App fees</button>
         <button class="seg-btn" data-metric="downpay">Downpayment</button>
+        <button class="seg-btn" data-metric="docs">Documents</button>
       </div>
     </div>
     <div class="grid2">
@@ -424,7 +423,8 @@ const STAGES = [
   {name:'Submitted',     note:'completed & submitted',  k26:'submitted 2026',     k25:'submitted 2025'},
   {name:'Paid Fees',     note:'application fee paid',    k26:'paid application fees 2026', k25:'paid application fees 2025'},
   {name:'Interviewed',   note:'admissions interview',   k26:'interviewed 2026',   k25:'interviewed 2025'},
-  {name:'Conditional Accept', note:'C.A issued',        k26:'c.a 2026',           k25:'c.a 2025'},
+  {name:'Conditional Accept', note:'C.A local + foreign', k26:['c.a 2026','c.a foreign 2026'], k25:['c.a 2025','c.a foreign 2025']},
+  {name:'Final Accept',  note:'P.A local + foreign',    k26:['p.a 2026','p . a foreign 2026'], k25:['p.a 2025','p . a foreign 2025']},
   {name:'Down payment',  note:'downpayment + 1st installment', k26:['downpayment 2026','1st installment 2026','installment foreign 2026'], k25:['down payment 2025','1st installment 2025','installment foreign 2025']},
   {name:'Documents',     note:'documents submitted',    k26:'documents submission 2026', k25:'documents submission 2025'},
   {name:'Withdrew',      note:'withdrawn after applying',k26:'withdrawal 2026',    k25:'withdrawal 2025'},
@@ -442,24 +442,24 @@ let DATA = {
   reportDate:'Sample data',
   stages:{
     'Total Applied':[2502,877],'Submitted':[440,392],'Paid Fees':[241,271],
-    'Interviewed':[225,222],'Conditional Accept':[162,207],
+    'Interviewed':[225,222],'Conditional Accept':[162,207],'Final Accept':[0,232],
     'Down payment':[84,98],'Documents':[36,34],'Withdrew':[2,1]
   },
   certs:{'Thanaweya Amma':171,'TA Foreign Certificates':123,'Technical Diploma':110,
     'STEM':14,'Thanaweya Arabya':13,'Thanaweya Azhareya':7,'Others (Schools)':2},
   programs:[
-    {name:'AI & Data Science',                    submitted:[94,73], fees:[47,52], downpay:[22,16], y26:94,y25:73},
-    {name:'Network and Cyber Security',           submitted:[86,84], fees:[52,66], downpay:[22,33], y26:86,y25:84},
-    {name:'Computer Science',                     submitted:[81,93], fees:[40,61], downpay:[14,20], y26:81,y25:93},
-    {name:'Electrical and Electronic Engineering',submitted:[55,54], fees:[30,33], downpay:[6,14],  y26:55,y25:54},
-    {name:'Energy Engineering',                   submitted:[38,20], fees:[22,14], downpay:[5,4],   y26:38,y25:20},
-    {name:'Product Design',                       submitted:[30,25], fees:[20,19], downpay:[8,5],   y26:30,y25:25},
-    {name:'Animation & Media & Visual Design',    submitted:[22,35], fees:[12,22], downpay:[5,7],   y26:22,y25:35},
-    {name:'Business Information System',          submitted:[12,0],  fees:[7,0],   downpay:[0,0],   y26:12,y25:0},
-    {name:'Information',                          submitted:[8,5],   fees:[3,3],   downpay:[1,0],   y26:8,y25:5},
-    {name:'Game Development Software Engineering', submitted:[8,1],   fees:[7,0],   downpay:[1,0],   y26:8,y25:1},
-    {name:'Business Analytics',                   submitted:[5,0],   fees:[1,0],   downpay:[0,0],   y26:5,y25:0},
-    {name:'AI in Smart Water Management',         submitted:[1,2],   fees:[0,1],   downpay:[0,0],   y26:1,y25:2},
+    {name:'AI & Data Science',                    submitted:[94,73], fees:[47,52], downpay:[22,16], docs:[16,28], y26:94,y25:73},
+    {name:'Network and Cyber Security',           submitted:[86,84], fees:[52,66], downpay:[22,33], docs:[16,48], y26:86,y25:84},
+    {name:'Computer Science',                     submitted:[81,93], fees:[40,61], downpay:[14,20], docs:[10,24], y26:81,y25:93},
+    {name:'Electrical and Electronic Engineering',submitted:[55,54], fees:[30,33], downpay:[6,14],  docs:[8,15], y26:55,y25:54},
+    {name:'Energy Engineering',                   submitted:[38,20], fees:[22,14], downpay:[5,4],   docs:[6,4], y26:38,y25:20},
+    {name:'Product Design',                       submitted:[30,25], fees:[20,19], downpay:[8,5],   docs:[4,6], y26:30,y25:25},
+    {name:'Animation & Media & Visual Design',    submitted:[22,35], fees:[12,22], downpay:[5,7],   docs:[5,5], y26:22,y25:35},
+    {name:'Business Information System',          submitted:[12,0],  fees:[7,0],   downpay:[0,0],   docs:[0,0], y26:12,y25:0},
+    {name:'Information',                          submitted:[8,5],   fees:[3,3],   downpay:[1,0],   docs:[2,1], y26:8,y25:5},
+    {name:'Game Development Software Engineering', submitted:[8,1],   fees:[7,0],   downpay:[1,0],   docs:[0,1], y26:8,y25:1},
+    {name:'Business Analytics',                   submitted:[5,0],   fees:[1,0],   downpay:[0,0],   docs:[0,0], y26:5,y25:0},
+    {name:'AI in Smart Water Management',         submitted:[1,2],   fees:[0,1],   downpay:[0,0],   docs:[0,0], y26:1,y25:2},
   ]
 };
 
@@ -611,6 +611,7 @@ function parseWorkbook(wb){
       const subMap  = readBlock('Submitted', 0, 1, 2);
       const feesMap = readBlock('Paid Application fees', 4, 5, 7);
       const dpMap   = readBlock('Downpayment', 4, 5, 7);
+      const docsMap = readBlock('Documents Submission Per Program', 0, 1, 2);
       const names = Object.keys(subMap);
       if(names.length){
         programs = names.map(nm=>({
@@ -618,6 +619,7 @@ function parseWorkbook(wb){
           submitted: subMap[nm]      || [0,0],
           fees:      feesMap[nm]      || [0,0],
           downpay:   dpMap[nm]        || [0,0],
+          docs:      docsMap[nm]      || [0,0],
           // keep y26/y25 for backward compatibility (defaults to submitted)
           y26: (subMap[nm]||[0,0])[0], y25: (subMap[nm]||[0,0])[1],
         }));
@@ -849,6 +851,7 @@ const PROG_META={
   submitted:{label:'Submitted applications', chartTitle:'Submitted by program', tableTitle:'Program movement'},
   fees:{label:'Paid application fees', chartTitle:'Paid app fees by program', tableTitle:'Program movement'},
   downpay:{label:'Downpayments', chartTitle:'Downpayments by program', tableTitle:'Program movement'},
+  docs:{label:'Documents submitted', chartTitle:'Documents by program', tableTitle:'Program movement'},
 };
 // pull [y26,y25] for the active metric, with graceful fallback to legacy y26/y25
 function progPair(p){
@@ -1012,10 +1015,15 @@ function render(){
   document.getElementById('reportDate').textContent = 'Daily Report · '+DATA.reportDate;
   renderConversion(); renderTarget(); renderThreeWay(); wireThreeWayToggle(); renderPrograms(); wireProgToggle();
 
-  // KPI band
-  const kpiDefs=[['Total Applied','TOTAL APPLIED'],['Submitted','SUBMITTED'],
-                 ['Paid Fees','PAID FEES'],['Interviewed','INTERVIEWED'],
-                 ['Conditional Accept','CONDITIONAL ACCEPT'],['Down payment','DOWN PAYMENT']];
+  // KPI band — auto: يعرض كل مرحلة موجودة في التقرير
+  const KPI_LABELS={
+    'Total Applied':'TOTAL APPLIED','Submitted':'SUBMITTED','Paid Fees':'PAID FEES',
+    'Interviewed':'INTERVIEWED','Conditional Accept':'CONDITIONAL ACCEPT',
+    'Final Accept':'FINAL ACCEPT (P.A)','Down payment':'DOWN PAYMENT',
+    'Documents':'DOCUMENTS','Withdrew':'WITHDREW'
+  };
+  const KPI_HIDE=['Documents','Withdrew'];
+  const kpiDefs=Object.keys(DATA.stages).filter(k=>!KPI_HIDE.includes(k)).map(k=>[k,(KPI_LABELS[k]||k.toUpperCase())]);
   document.getElementById('kpiRow').innerHTML = kpiDefs.map(([key,lab])=>{
     const [y26,y25]=DATA.stages[key]||[0,0];
     const g=growth(y26,y25), up=g>=0;
