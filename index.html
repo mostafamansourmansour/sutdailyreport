@@ -165,12 +165,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .h-crit .dot{background:var(--down)}
 
   /* conversion strip */
-  .conv{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  .conv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .conv .step{background:var(--paper-2);border:1px solid var(--line);border-radius:6px;
     padding:14px 12px;text-align:center}
+  .conv .step.warn{border-color:var(--gold)}
   .conv .step .arrow{font-family:'Roboto Mono','SF Mono',Consolas,'Courier New',monospace;font-size:10px;color:var(--muted);
     letter-spacing:.04em;margin-bottom:7px;text-transform:uppercase}
   .conv .step .rate{font-family:'Fraunces',Georgia,'Times New Roman',serif;font-size:26px;font-weight:600}
+  .conv .step.warn .rate{color:var(--gold)}
+  .conv .step .warnmark{font-size:13px;margin-left:3px;cursor:help}
   .conv .step .yr{font-family:'Roboto Mono','SF Mono',Consolas,'Courier New',monospace;font-size:11px;margin-top:5px}
 
   /* recommendations */
@@ -335,6 +338,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <div class="sec-head"><span class="sec-num">02</span><h2>Stage-to-stage conversion</h2></div>
     <p class="sec-note">The share of applicants who move from one stage to the next. This is where the funnel leaks — a low rate means people arrive but don't continue. Fall 2025 shown for reference.</p>
     <div class="conv" id="convStrip"></div>
+    <p class="cnote" id="convFlagNote" style="display:none;margin-top:10px;color:var(--gold)"></p>
   </section>
 
   <section>
@@ -635,7 +639,20 @@ function parseWorkbook(wb){
 }
 
 /* ---------------- derived analytics ---------------- */
-function stageVal(name,idx){ return (DATA.stages[name]||[0,0])[idx]||0; }
+// "Conditional Accept" (C.A) is a live queue, not a running total: once a student is moved to
+// "Final Accept" (P.A) they are removed from the C.A count entirely. So C.A alone understates
+// everyone who was ever conditionally accepted. ACCEPTED_KEY is a synthetic combined stage
+// (C.A still pending + P.A already converted) used anywhere we need "how many have been
+// accepted in total" — it's the correct denominator/numerator for the accept step, not C.A alone.
+const ACCEPTED_KEY='Accepted (C.A+P.A)';
+function stageVal(name,idx){
+  if(name===ACCEPTED_KEY){
+    const ca=(DATA.stages['Conditional Accept']||[0,0])[idx]||0;
+    const pa=(DATA.stages['Final Accept']||[0,0])[idx]||0;
+    return ca+pa;
+  }
+  return (DATA.stages[name]||[0,0])[idx]||0;
+}
 
 // conversion rate from one stage to the next, for a given year index (0=2026,1=2025)
 function convRate(fromName,toName,idx){
@@ -647,24 +664,45 @@ const CONV_STEPS=[
   ['Total Applied','Submitted','Applied → Submitted'],
   ['Submitted','Paid Fees','Submitted → Paid'],
   ['Paid Fees','Interviewed','Paid → Interview'],
-  ['Interviewed','Conditional Accept','Interview → Accept'],
-  ['Conditional Accept','Down payment','Accept → Downpay'],
+  ['Interviewed',ACCEPTED_KEY,'Interview → Accept'],
+  [ACCEPTED_KEY,'Down payment','Accept → Downpay'],   // "Down payment" already combines downpayment + 1st installment (local & foreign)
   ['Down payment','Documents','Downpay → Docs'],
 ];
 
 function renderConversion(){
   const el=document.getElementById('convStrip'); el.innerHTML='';
+  const flagged=[];
   CONV_STEPS.forEach(([a,b,lab])=>{
     const r26=convRate(a,b,0), r25=convRate(a,b,1);
+    const flag26 = r26!=null && r26>100;
+    if(flag26) flagged.push(lab);
     const r26s=r26==null?'—':r26.toFixed(0)+'%';
+    // extra context on the accept step: how much of "Accepted" is still pending (C.A) vs already converted (P.A)
+    let extraTitle='';
+    if(b===ACCEPTED_KEY){
+      const ca=(DATA.stages['Conditional Accept']||[0,0])[0]||0, pa=(DATA.stages['Final Accept']||[0,0])[0]||0;
+      extraTitle=`"Accepted" = still pending as Conditional Accept (${fmt(ca)}) + already converted to Final Accept (${fmt(pa)}). C.A shrinks as students convert to P.A, so C.A alone is not a running total.`;
+    }
+    const warnTitle=`'${b}' (${fmt(stageVal(b,0))}) is higher than '${a}' (${fmt(stageVal(a,0))}) in the Fall 2026 data.`;
+    const warnMark = flag26 ? `<span class="warnmark" title="${warnTitle}">⚠</span>` : '';
+    const infoMark = (!flag26 && extraTitle) ? `<span class="warnmark" title="${extraTitle}">ⓘ</span>` : '';
     let cmp='';
     if(r26!=null&&r25!=null){
       const d=r26-r25; const up=d>=0;
       cmp=`<div class="yr ${up?'up':'down'}" style="color:${up?'var(--up)':'var(--down)'}">${up?'▲':'▼'} ${Math.abs(d).toFixed(0)} pts vs '25</div>`;
     }else{ cmp=`<div class="yr" style="color:var(--muted)">2025: ${r25==null?'—':r25.toFixed(0)+'%'}</div>`; }
     el.insertAdjacentHTML('beforeend',
-      `<div class="step"><div class="arrow">${lab}</div><div class="rate">${r26s}</div>${cmp}</div>`);
+      `<div class="step${flag26?' warn':''}"><div class="arrow">${lab}</div><div class="rate">${r26s}${warnMark}${infoMark}</div>${cmp}</div>`);
   });
+  const flagNote=document.getElementById('convFlagNote');
+  if(flagNote){
+    if(flagged.length){
+      flagNote.style.display='block';
+      flagNote.innerHTML=`⚠ ${flagged.join(', ')} shows above 100% — more applicants are recorded at the later stage than the earlier one. Worth checking with the team that owns SIS data entry.`;
+    }else{
+      flagNote.style.display='none'; flagNote.innerHTML='';
+    }
+  }
 }
 
 // build a prioritized recommendation list purely from the data
