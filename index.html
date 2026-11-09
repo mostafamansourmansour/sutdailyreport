@@ -129,6 +129,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     padding:1px 7px;border-radius:20px;margin-left:8px}
   .chip-up{background:rgba(46,125,91,.13);color:var(--up)}
   .chip-down{background:rgba(180,71,47,.12);color:var(--down)}
+  .foreign-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Roboto Mono','SF Mono',Consolas,'Courier New',monospace;
+    font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;margin-left:8px;
+    background:rgba(27,90,110,.12);color:#1B5A6E;border:1px solid rgba(27,90,110,.25)}
+  .foreign-badge .fg25{font-weight:400;color:var(--muted);margin-left:4px}
+  .kpi-foreign{grid-column:1/-1;display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 28px;padding:14px 18px;background:rgba(127,209,230,.08)}
+  .kpi-foreign .lab,.kpi-foreign .val,.kpi-foreign .delta{margin:0}
+  .kpi-foreign .val{font-size:28px}
+  .kpi-foreign .val,.kpi-foreign .lab{color:#7FD1E6}
   .legend{display:flex;gap:22px;margin-top:20px;font-size:12.5px;color:var(--muted);
     font-family:'Roboto Mono','SF Mono',Consolas,'Courier New',monospace}
   .legend i{display:inline-block;width:22px;height:11px;border-radius:2px;
@@ -269,6 +277,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     .conv{grid-template-columns:repeat(2,1fr)}
     .target-grid{grid-template-columns:1fr}
   }
+  .nlist{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13.5px}
+  .nlist li{padding:10px 14px;border-radius:6px;border:1px solid var(--line);background:var(--paper)}
+  .nlist li.warn{border-left:4px solid var(--gold)} .nlist li.ok{border-left:4px solid var(--up)}
+  .lstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .lrow{display:grid;grid-template-columns:200px 1fr 90px;gap:12px;align-items:center;font-size:13px;margin:6px 0}
+  .lbar{height:12px;background:var(--line);border-radius:6px;overflow:hidden}.lbar i{display:block;height:100%;background:var(--ink)}
+  .lbar i.bad{background:var(--gold)}
+  .lrow span:last-child{text-align:right;font-family:'Roboto Mono',Consolas,monospace}
+  @media(max-width:600px){.lrow{grid-template-columns:1fr 1fr}.lrow .lbar{grid-column:1/-1}}
   @media(prefers-reduced-motion:reduce){.bar-26{transition:none}}
 </style>
 </head>
@@ -343,7 +360,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <section>
     <div class="sec-head"><span class="sec-num">03</span><h2>The admissions funnel</h2></div>
-    <p class="sec-note">Each solid bar is Fall 2026; the hatched marker behind it is Fall 2025 at the same stage. The percentage inside each bar is that stage's share of total applicants. A widening gap after "Submitted" is where paid conversion is slipping versus last year.</p>
+    <p class="sec-note">Each solid bar is Fall 2026; the hatched marker behind it is Fall 2025 at the same stage. The percentage inside each bar is that stage's share of total applicants. Where the solid bar is shorter than the hatched marker, Fall 2026 is behind Fall 2025 at that stage.</p>
     <div class="funnel" id="funnel"></div>
     <div class="legend">
       <span><i style="background:linear-gradient(90deg,#0F1E33,#1B3050)"></i>Fall 2026</span>
@@ -353,7 +370,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <section>
     <div class="sec-head"><span class="sec-num">04</span><h2>2026 vs 2025, stage by stage</h2></div>
-    <p class="sec-note">Applications are up sharply, driven mostly by early-stage volume. The story to watch: growth turns negative once real commitment is required — paid fees, conditional acceptance and downpayment.</p>
+    <p class="sec-note" id="note04"></p>
     <div class="grid2">
       <div class="card">
         <h3>Volume by stage</h3>
@@ -404,6 +421,24 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
     </div>
   </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Lead quality — call centre</h2></div>
+    <p class="sec-note">Outcome of calls logged in the Leads sheet. Share of calls that reach an eligible applicant versus those that do not convert.</p>
+    <div class="card" id="leadsBox"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Daily trend</h2></div>
+    <p class="sec-note" id="trendNote"></p>
+    <div class="card"><div style="height:260px"><canvas id="trendChart"></canvas></div><div id="trendTable" style="margin-top:14px"></div></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Data notes</h2></div>
+    <p class="sec-note">Automatic checks on the uploaded workbook, so the numbers can be read with the right caveats.</p>
+    <div class="card"><ul class="nlist" id="notesBox"></ul></div>
+  </section>
 </div>
 
 <footer>
@@ -436,36 +471,21 @@ const STAGES = [
 const CERT_ORDER = ['Thanaweya Amma','TA Foreign Certificates','Technical Diploma',
   'STEM','Thanaweya Arabya','Thanaweya Azhareya','Others (Schools)'];
 const CERT_SUBMITTED_ROW = 'submitted 2026';
+/* Foreign-nationals breakdown (already INCLUDED in the stage totals above, shown separately for clarity) */
+const FOREIGN_STAGES = [
+  {stage:'Conditional Accept', k26:'c.a foreign 2026',          k25:'c.a foreign 2025'},
+  {stage:'Final Accept',       k26:'p . a foreign 2026',        k25:'p . a foreign 2025'},
+  {stage:'Down payment',       k26:'installment foreign 2026',  k25:'installment foreign 2025',
+   kpi:true, label:'DOWN PAYMENT — FOREIGN / أجانب'}
+];
+const ENROL_PER_DOWNPAY = 850/902;   // last season: 850 enrolled from 902 down payments
 
 /* ---------------- targets & enrolment history (fixed inputs) ---------------- */
 const TARGET_2026 = 1300;
 const ENROL_HISTORY = [ ['Year 1',550], ['Year 2',650], ['Year 3',850] ]; // committed students
 
 /* ---------------- sample (fallback) data ---------------- */
-let DATA = {
-  reportDate:'Sample data',
-  stages:{
-    'Total Applied':[2502,877],'Submitted':[440,392],'Paid Fees':[241,271],
-    'Interviewed':[225,222],'Conditional Accept':[162,207],'Final Accept':[0,232],
-    'Down payment':[84,98],'Documents':[36,34],'Withdrew':[2,1]
-  },
-  certs:{'Thanaweya Amma':171,'TA Foreign Certificates':123,'Technical Diploma':110,
-    'STEM':14,'Thanaweya Arabya':13,'Thanaweya Azhareya':7,'Others (Schools)':2},
-  programs:[
-    {name:'AI & Data Science',                    submitted:[94,73], fees:[47,52], downpay:[22,16], docs:[16,28], y26:94,y25:73},
-    {name:'Network and Cyber Security',           submitted:[86,84], fees:[52,66], downpay:[22,33], docs:[16,48], y26:86,y25:84},
-    {name:'Computer Science',                     submitted:[81,93], fees:[40,61], downpay:[14,20], docs:[10,24], y26:81,y25:93},
-    {name:'Electrical and Electronic Engineering',submitted:[55,54], fees:[30,33], downpay:[6,14],  docs:[8,15], y26:55,y25:54},
-    {name:'Energy Engineering',                   submitted:[38,20], fees:[22,14], downpay:[5,4],   docs:[6,4], y26:38,y25:20},
-    {name:'Product Design',                       submitted:[30,25], fees:[20,19], downpay:[8,5],   docs:[4,6], y26:30,y25:25},
-    {name:'Animation & Media & Visual Design',    submitted:[22,35], fees:[12,22], downpay:[5,7],   docs:[5,5], y26:22,y25:35},
-    {name:'Business Information System',          submitted:[12,0],  fees:[7,0],   downpay:[0,0],   docs:[0,0], y26:12,y25:0},
-    {name:'Information',                          submitted:[8,5],   fees:[3,3],   downpay:[1,0],   docs:[2,1], y26:8,y25:5},
-    {name:'Game Development Software Engineering', submitted:[8,1],   fees:[7,0],   downpay:[1,0],   docs:[0,1], y26:8,y25:1},
-    {name:'Business Analytics',                   submitted:[5,0],   fees:[1,0],   downpay:[0,0],   docs:[0,0], y26:5,y25:0},
-    {name:'AI in Smart Water Management',         submitted:[1,2],   fees:[0,1],   downpay:[0,0],   docs:[0,0], y26:1,y25:2},
-  ]
-};
+let DATA = {"reportDate": "2026-09-24", "stages": {"Total Applied": [10199, 3815], "Submitted": [2829, 2129], "Paid Fees": [1951, 1358], "Interviewed": [1867, 1299], "Conditional Accept": [116, 69], "Final Accept": [1615, 1145], "Down payment": [1154, 735], "Documents": [1170, 782], "Withdrew": [139, 91]}, "foreign": {"Conditional Accept": [10, 3], "Final Accept": [5, 2], "Down payment": [6, 0]}, "scholarship": 24, "leads": {"total": 5543, "byCert": [["Thanaweya Amma", 2172], ["Technical Diploma", 453], ["Thanaweya Azhareya", 140], ["TA Foreign Certificates", 196], ["Thanaweya Arabya", 19], ["STEM", 14], ["Other Schools", 9]], "reasons": [["Not eligible (prep. schools)", 813], ["Not interested", 364], ["Undecided", 1356], ["Below 52%", 8]]}, "certs": {"Thanaweya Amma": 1873, "Technical Diploma": 457, "Thanaweya Azhareya": 154, "TA Foreign Certificates": 248, "Thanaweya Arabya": 52, "STEM": 42, "Others (Schools)": 3}, "programs": [{"name": "Animation & Media & Visual Design", "submitted": [83, 84], "fees": [49, 45], "downpay": [29, 16], "docs": [31, 17], "y26": 83, "y25": 84}, {"name": "Product Design", "submitted": [134, 84], "fees": [87, 53], "downpay": [49, 27], "docs": [52, 26], "y26": 134, "y25": 84}, {"name": "Computer Science", "submitted": [629, 522], "fees": [451, 324], "downpay": [282, 185], "docs": [281, 188], "y26": 629, "y25": 522}, {"name": "AI & Data Science", "submitted": [665, 560], "fees": [455, 349], "downpay": [272, 200], "docs": [269, 198], "y26": 665, "y25": 560}, {"name": "Electrical and Electronic Engineering", "submitted": [398, 247], "fees": [264, 169], "downpay": [162, 99], "docs": [161, 102], "y26": 398, "y25": 247}, {"name": "Energy Engineering", "submitted": [197, 115], "fees": [153, 91], "downpay": [94, 57], "docs": [91, 57], "y26": 197, "y25": 115}, {"name": "Information", "submitted": [28, 33], "fees": [12, 15], "downpay": [2, 4], "docs": [2, 5], "y26": 28, "y25": 33}, {"name": "Network and Cyber Security", "submitted": [586, 430], "fees": [435, 307], "downpay": [283, 195], "docs": [278, 189], "y26": 586, "y25": 430}, {"name": "Game Development Software Engineering", "submitted": [26, 5], "fees": [17, 1], "downpay": [5, 0], "docs": [5, 0], "y26": 26, "y25": 5}, {"name": "Business Analytics", "submitted": [23, 0], "fees": [4, 0], "downpay": [0, 0], "docs": [0, 0], "y26": 23, "y25": 0}, {"name": "Business Information System", "submitted": [52, 0], "fees": [24, 0], "downpay": [0, 0], "docs": [0, 0], "y26": 52, "y25": 0}, {"name": "AI in Smart Water Management", "submitted": [8, 4], "fees": [0, 2], "downpay": [0, 1], "docs": [0, 0], "y26": 8, "y25": 4}]};
 
 /* ---------------- helpers ---------------- */
 const fmt=n=>Number(n).toLocaleString('en-US');
@@ -474,6 +494,19 @@ const norm=s=>String(s==null?'':s).trim().toLowerCase().replace(/\s+/g,' ');
 let barChart, donutChart;
 
 /* ---------------- parse an uploaded workbook ---------------- */
+function parseLeads(wb){
+  try{
+    const nm=wb.SheetNames.find(n=>/lead/i.test(n)); if(!nm) return null;
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,defval:null});
+    const N=v=>typeof v==='number'?v:(parseFloat(v)||0);
+    const hdr=rows.find(r=>r&&norm(r[1])==='thanaweya amma');
+    const tot=rows.find(r=>r&&norm(r[0])==='total calls');
+    if(!hdr||!tot) return null;
+    const byCert=[1,3,5,7,9,11,13].map(c=>[String(hdr[c]||'').trim(), N(tot[c])+N(tot[c+1])]);
+    return {total:N(tot[19]), byCert,
+      reasons:[['Not eligible (prep. schools)',N(tot[15])],['Not interested',N(tot[16])],['Undecided',N(tot[17])],['Below 52%',N(tot[18])]]};
+  }catch(e){ return null; }
+}
 function parseWorkbook(wb){
   // find the SIS Applications sheet
   let sheetName = wb.SheetNames.find(n=>norm(n).includes(SHEET_NAME_HINT)) || wb.SheetNames[0];
@@ -632,8 +665,11 @@ function parseWorkbook(wb){
   }
 
   const todayLocal=(()=>{ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
+  const foreign={};
+  FOREIGN_STAGES.forEach(f=>{ foreign[f.stage]=[getOne(f.k26)||0, getOne(f.k25)||0]; });
   const result = {reportDate: reportDate||todayLocal,
-          stages, certs: Object.keys(certs).length?certs:DATA.certs};
+          stages, foreign, scholarship:(getOne('full scholarship')||0), certs: Object.keys(certs).length?certs:DATA.certs};
+  { const lq=parseLeads(wb); if(lq) result.leads=lq; }
   if(programs) result.programs = programs;
   return result;
 }
@@ -706,6 +742,11 @@ function renderConversion(){
 }
 
 // build a prioritized recommendation list purely from the data
+function incompleteShare(){
+  const t=DATA.stages['Total Applied'], s=DATA.stages['Submitted'];
+  if(!t||!s||!t[0]||!t[1]) return null;
+  return [(t[0]-s[0])/t[0]*100,(t[1]-s[1])/t[1]*100];
+}
 function buildRecs(){
   const recs=[];
   const g=(name)=>{const [a,b]=DATA.stages[name]||[0,0]; return b?((a-b)/b*100):null;};
@@ -716,7 +757,7 @@ function buildRecs(){
   if(paidConv26!=null){
     if(paidConv25!=null && paidConv26 < paidConv25){
       recs.push(['high','Qualify leads earlier — data quality is the constraint',
-        `Only ${paidConv26.toFixed(0)}% of submitted applicants have paid fees, down from ${paidConv25.toFixed(0)}% last year. The drop reflects a flood of low-intent, unqualified applications — not weak follow-up. The team already contacts applicants by phone, SMS, email and WhatsApp. Fix the intake: qualify leads earlier and require more complete data so effort lands on genuine prospects.`]);
+        `Only ${paidConv26.toFixed(0)}% of submitted applicants have paid fees, down from ${paidConv25.toFixed(0)}% last year. Review lead qualification at intake and the path from submission to payment.`]);
     } else {
       recs.push(['low','Payment conversion holding',
         `${paidConv26.toFixed(0)}% of submitted applicants have paid fees, in line with or above last year. Keep the current follow-up cadence.`]);
@@ -735,8 +776,14 @@ function buildRecs(){
     }
   }
 
+  // incomplete applications share (data-driven)
+  {const s=incompleteShare(); if(s&&s[0]-s[1]>=10){
+    recs.push(['med','Many applications stay incomplete',
+      `${s[0].toFixed(0)}% of applications opened are still not submitted (${s[1].toFixed(0)}% in the Fall 2025 column). Earlier qualification and a shorter intake form would turn more of this volume into submitted applications.`]);
+  }}
+
   // GOAL 3 — enrolled / downpayment
-  const gDown=g('Downpayment');
+  const gDown=g('Down payment');
   if(gDown!=null && gDown<0){
     recs.push(['high','Enrolment commitments trailing',
       `Downpayments are ${Math.abs(gDown).toFixed(0)}% below last year — fewer applicants are converting into committed students. Tighten the path from conditional acceptance to downpayment (deadlines, incentives, direct outreach).`]);
@@ -785,7 +832,8 @@ function computeTarget(){
   const gap = target-projection;
   const reqGrowth = (target-last)/last;      // growth needed vs last year
   const reqAbs = target-last;
-  return {last,avgPct,avgAbs,lastPct,projection,target,gap,reqGrowth,reqAbs,
+  const committed=stageVal('Down payment',0)||0, liveEnrol=Math.round(committed*ENROL_PER_DOWNPAY);
+  return {committed,liveEnrol,last,avgPct,avgAbs,lastPct,projection,target,gap,reqGrowth,reqAbs,
           projPct:Math.round(projPct),projAbs:Math.round(projAbs),projMom:Math.round(projMom)};
 }
 
@@ -804,6 +852,7 @@ function renderTarget(){
     ['Last year enrolled', fmt(t.last), 'Year 3 committed students'],
     ['Historical growth', '+'+(t.avgPct*100).toFixed(0)+'% / yr', `avg of +${(t.avgPct*100).toFixed(0)}% (≈ +${Math.round(t.avgAbs)} students each year)`],
     ['Projected 2026', fmt(t.projection), `blend of trend methods (${fmt(t.projPct)}–${fmt(t.projMom)})`],
+    ['Committed so far', fmt(t.committed), `down payments · ≈ ${fmt(t.liveEnrol)} enrolled at last season's ratio (${(t.liveEnrol/t.target*100).toFixed(0)}% of target)`],
     ['Growth needed for target', '+'+(t.reqGrowth*100).toFixed(0)+'%', `+${fmt(t.reqAbs)} students in one year to reach ${fmt(t.target)}`],
   ];
   document.getElementById('tstats').innerHTML = stats.map(([l,v,d])=>
@@ -823,6 +872,8 @@ function renderTarget(){
     cls='reach'; title='Target looks out of reach on current trend';
     msg=`Reaching ${fmt(t.target)} would need +${reqG.toFixed(0)}% growth — far beyond anything achieved so far (best year +${bestHist.toFixed(0)}%). Without a major structural change, the realistic outcome is closer to ${fmt(t.projection)}.`;
   }
+  if(t.liveEnrol>=t.target){ cls='likely'; title='Target reached on current commitments'; msg=`Committed down payments (${fmt(t.committed)}) already imply about ${fmt(t.liveEnrol)} enrolled at last season's conversion, above the ${fmt(t.target)} target.`; }
+  else if(t.liveEnrol>=0.8*t.target){ msg=`Committed down payments (${fmt(t.committed)}) already imply about ${fmt(t.liveEnrol)} enrolled (${(t.liveEnrol/t.target*100).toFixed(0)}% of target), so the remaining gap is about ${fmt(t.target-t.liveEnrol)} — much smaller than the trend alone suggests. `+msg; }
   el.className='verdict '+cls;
   el.innerHTML=`<div class="dot"></div><div><b>${title}</b><p>${msg}</p></div>`;
 }
@@ -955,36 +1006,50 @@ function briefFacts(){
   return {
     reportDate:DATA.reportDate,
     totalApplied:g('Total Applied'), submitted:g('Submitted'), paidFees:g('Paid Fees'),
-    interviewed:g('Interviewed'), conditional:g('Conditional Accept'), downpayment:g('Downpayment'),
+    interviewed:g('Interviewed'), conditional:g('Conditional Accept'), downpayment:g('Down payment'), finalAccept:g('Final Accept'),
     documents:g('Documents'),
     paidConversion26:paid26, paidConversion25:paid25,
     target:t.target, projection:t.projection, gapToTarget:t.gap,
     growthNeeded:(t.reqGrowth*100), historicalGrowth:(t.avgPct*100), lastEnrolled:t.last,
     topProgram:progs[0], bottomProgram:progs[progs.length-1],
+    incomplete:incompleteShare(), foreign:DATA.foreign||{}, leads:DATA.leads||null, scholarship:DATA.scholarship||0,
   };
 }
 
 function localBrief(){
-  const f=briefFacts();
+  const f=briefFacts(), t=computeTarget();
   const pct=(x)=> x==null?'—':(x>=0?'+':'−')+Math.abs(x).toFixed(0)+'%';
   const parts=[];
-  parts.push(`<p>As of <b>${f.reportDate}</b>, total applications stand at <b>${fmt(f.totalApplied.y26)}</b> — up <b>${pct(f.totalApplied.growth)}</b> versus the same point last cycle. The top of the funnel is strong, but the momentum does not yet carry through to committed enrolment.</p>`);
-  const paidDrop = (f.paidConversion26!=null&&f.paidConversion25!=null&&f.paidConversion26<f.paidConversion25);
-  parts.push(`<p>The apparent issue is conversion to payment: <b>${f.paidConversion26==null?'—':f.paidConversion26.toFixed(0)+'%'}</b> of submitted applicants have paid fees${paidDrop?`, down from <b>${f.paidConversion25.toFixed(0)}%</b> a year ago`:''}. Paid fees (${pct(f.paidFees.growth)}), conditional acceptances (${pct(f.conditional.growth)}) and downpayments (${pct(f.downpayment.growth)}) are all behind last year.</p>`);
-  parts.push(`<p><b>Root cause — lead quality, not demand or effort.</b> The very large rise in applications is dominated by early-stage, largely unqualified entries: a big share of applicants provide incomplete or low-intent data and never progress. This is not a follow-up gap — the admissions &amp; registration team is already reaching out through multiple channels (phone calls, SMS, email and WhatsApp). The constraint is the <b>quality of the incoming data</b>, not the outreach behind it. The priority is qualifying leads earlier and tightening application intake so effort concentrates on genuine prospects.</p>`);
-  parts.push(`<p>On the enrolment target: the goal is <b>${fmt(f.target)}</b> students. On the three-year growth trend the cycle projects to about <b>${fmt(f.projection)}</b>, leaving a gap of roughly <b>${fmt(Math.abs(f.gapToTarget))}</b>. Reaching ${fmt(f.target)} would require <b>${pct(f.growthNeeded)}</b> growth over last year's ${fmt(f.lastEnrolled)} — well above the historical average of ${f.historicalGrowth.toFixed(0)}%. The target is achievable only as a deliberate stretch, not on the current trajectory.</p>`);
+  parts.push(`<p>As of <b>${f.reportDate}</b>, total applications stand at <b>${fmt(f.totalApplied.y26)}</b> (${pct(f.totalApplied.growth)} vs the Fall 2025 column). Submitted applications are ${pct(f.submitted.growth)}, paid fees ${pct(f.paidFees.growth)} and down payments <b>${fmt(f.downpayment.y26)}</b> (${pct(f.downpayment.growth)}).</p>`);
+  if(f.paidConversion26!=null&&f.paidConversion25!=null){
+    const up=f.paidConversion26>=f.paidConversion25;
+    parts.push(`<p>Conversion from submitted to paid is <b>${f.paidConversion26.toFixed(0)}%</b>, ${up?'up from':'down from'} ${f.paidConversion25.toFixed(0)}% in the 2025 column. Conditional acceptances are ${pct(f.conditional.growth)} and final acceptances ${pct(f.finalAccept.growth)}.</p>`);
+  }
+  if(f.incomplete){
+    let s=`<p>Lead quality: <b>${f.incomplete[0].toFixed(0)}%</b> of opened applications are not yet submitted (${f.incomplete[1].toFixed(0)}% in the 2025 column).`;
+    if(f.leads&&f.leads.total){
+      const bad=f.leads.reasons.reduce((a,r)=>a+r[1],0);
+      s+=` The call-centre log shows <b>${fmt(f.leads.total)}</b> calls, of which ${(bad/f.leads.total*100).toFixed(0)}% ended as not eligible, not interested, undecided or below the grade threshold.`;
+    }
+    parts.push(s+'</p>');
+  }
+  const live=Math.round(t.committed*ENROL_PER_DOWNPAY);
+  parts.push(`<p>Target: <b>${fmt(f.target)}</b> students. The 3-year trend projects about ${fmt(f.projection)}, but committed down payments (${fmt(t.committed)}) already imply roughly <b>${fmt(live)}</b> enrolled at last season's conversion — ${(live/f.target*100).toFixed(0)}% of target, ${live>=f.target?'target reached on current commitments':'about '+fmt(f.target-live)+' to go'}.</p>`);
+  const fg=f.foreign||{};
+  if(fg['Down payment']) parts.push(`<p>Foreign applicants: <b>${fmt(fg['Down payment'][0])}</b> at down payment, ${fmt((fg['Final Accept']||[0])[0])} final-accepted and ${fmt((fg['Conditional Accept']||[0])[0])} conditionally accepted.</p>`);
   if(f.topProgram&&f.bottomProgram){
     parts.push(`<p>By program, <b>${f.topProgram.name}</b> shows the strongest year-over-year gain (${f.topProgram.diff>=0?'+':'−'}${Math.abs(f.topProgram.diff)}), while <b>${f.bottomProgram.name}</b> is the weakest (${f.bottomProgram.diff>=0?'+':'−'}${Math.abs(f.bottomProgram.diff)}).</p>`);
   }
-  parts.push(`<p><b>Bottom line:</b> the incoming lead data is largely unqualified — that is the real constraint, not the volume of applications or the team's outreach. The immediate priority is stronger lead qualification and cleaner intake, so genuine applicants are identified early and converted to paid. Without that, the cycle lands near ${fmt(f.projection)}, short of the ${fmt(f.target)} goal.</p>`);
+  const ahead=f.downpayment.growth!=null&&f.downpayment.growth>=0;
+  parts.push(`<p><b>Bottom line:</b> ${ahead?'commitment is ahead of last year; the priority is converting the remaining accepted applicants and protecting capacity.':'commitment is behind last year; the priority is the path from acceptance to down payment.'} ${f.incomplete&&f.incomplete[0]>50?'Qualifying leads earlier would reduce the large share of incomplete applications.':''}</p>`);
   return parts.join('');
 }
 
 async function aiBrief(){
   const f=briefFacts();
-  const prompt=`You are an admissions strategy advisor writing a brief for a university CEO and Secretary-General. Using ONLY the data below, write a sharp, professional executive brief in English (about 4 short paragraphs, ~190 words). Be direct and specific with the numbers. Cover: (1) overall demand vs last year, (2) the real root cause — see the IMPORTANT CONTEXT below, (3) whether the 1,300 enrolment target is realistic given the projection and required growth, (4) a one-line bottom-line recommendation. Write in clean HTML using <p> tags and <b> for key figures. Do not invent numbers.
+  const prompt=`You are an admissions strategy advisor writing a brief for a university CEO and Secretary-General. Using ONLY the data below, write a sharp, professional executive brief in English (about 4 short paragraphs, ~190 words). Be direct and specific with the numbers. Cover: (1) overall demand vs last year, (2) the main strengths and risks visible in the data, (3) whether the 1,300 enrolment target is realistic given the projection and required growth, (4) a one-line bottom-line recommendation. Write in clean HTML using <p> tags and <b> for key figures. Do not invent numbers.
 
-IMPORTANT CONTEXT (reflect this framing): The surge in total applications is dominated by early-stage, largely UNQUALIFIED leads — many applicants submit incomplete or low-intent data and never progress. This is NOT a follow-up or effort problem: the admissions & registration team already contacts applicants through multiple channels (phone calls, SMS, email, and WhatsApp). The true constraint is the QUALITY of the incoming application data, not conversion effort. Frame the recommendation around qualifying leads earlier and tightening application intake, not around "trying harder" to follow up.
+CONTEXT: the admissions team already contacts applicants by phone, SMS, email and WhatsApp, so do not present more follow-up as the main fix. Incomplete applications: ${f.incomplete?f.incomplete[0].toFixed(0)+'% vs '+f.incomplete[1].toFixed(0)+'% last year':'n/a'}. Foreign applicants at down payment: ${(f.foreign['Down payment']||[0])[0]}. Down payment here excludes ${f.scholarship} full-scholarship students. Only state causes the data supports.
 
 DATA (Fall 2026 vs Fall 2025):
 Report date: ${f.reportDate}
@@ -1047,11 +1112,82 @@ function renderHealth(){
   el.innerHTML=`<div class="dot"></div><div class="htxt"><b>${title}</b><span>${note}</span></div>`;
 }
 
+/* ---------------- leads / notes / trend / dynamic note ---------------- */
+function renderLeads(){
+  const L=DATA.leads, el=document.getElementById('leadsBox'); if(!el) return;
+  if(!L||!L.total){ el.innerHTML='<p class="cnote">No Leads sheet found in the workbook.</p>'; return; }
+  const bad=L.reasons.reduce((a,r)=>a+r[1],0), good=L.byCert.reduce((a,r)=>a+r[1],0);
+  const pc=v=>(v/L.total*100).toFixed(0)+'%';
+  const tile=(l,v,s)=>`<div class="tstat"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${s}</div></div>`;
+  const row=(n,v,cls)=>`<div class="lrow"><span>${n}</span><div class="lbar"><i class="${cls||''}" style="width:${(v/L.total*100).toFixed(1)}%"></i></div><span>${fmt(v)} · ${pc(v)}</span></div>`;
+  el.innerHTML=`<div class="lstats">${tile('Total calls',fmt(L.total),'all outcomes')}${tile('Eligible profile',fmt(good),pc(good)+' of calls')}${tile('Not converting',fmt(bad),pc(bad)+' of calls')}</div>
+    <h3>Calls that did not convert</h3><div class="cnote">Reason recorded by the call centre</div>${L.reasons.map(r=>row(r[0],r[1],'bad')).join('')}
+    <h3 style="margin-top:20px">Eligible calls by certificate</h3><div class="cnote">Certificate type of the caller</div>${L.byCert.map(r=>row(r[0],r[1])).join('')}`;
+}
+function renderNote04(){
+  const el=document.getElementById('note04'); if(!el) return;
+  const g=n=>{const s=DATA.stages[n]; return s&&s[1]?(s[0]-s[1])/s[1]*100:null;};
+  const f=x=>x==null?'—':(x>=0?'+':'−')+Math.abs(x).toFixed(0)+'%';
+  const names=['Total Applied','Submitted','Paid Fees','Final Accept','Down payment'];
+  const behind=names.filter(n=>g(n)!=null&&g(n)<0);
+  el.textContent=`Applications ${f(g('Total Applied'))}, submitted ${f(g('Submitted'))}, paid fees ${f(g('Paid Fees'))}, final acceptance ${f(g('Final Accept'))}, down payment ${f(g('Down payment'))} versus the Fall 2025 column. `+
+    (behind.length?'Stages behind last year: '+behind.join(', ')+'.':'Every key stage is ahead of last year.');
+}
+function renderNotes(){
+  const el=document.getElementById('notesBox'); if(!el) return;
+  const out=[], S=DATA.stages, P=DATA.programs||[];
+  const sum=(k,i)=>P.reduce((a,p)=>a+(p[k][i]||0),0);
+  const dp=S['Down payment']||[0,0], sch=DATA.scholarship||0;
+  const pd=sum('downpay',0);
+  if(P.length&&pd!==dp[0]){
+    const dd=pd-dp[0];
+    out.push(['warn',`Down payment is <b>${fmt(dp[0])}</b> in the funnel (SIS sheet) but <b>${fmt(pd)}</b> in the Classification sheet. The ${fmt(dd)} difference ${dd===sch?'equals the Full scholarship count — scholarship students are not in the funnel figure':'is not explained by the scholarship count ('+fmt(sch)+') — worth checking'}.`]);
+  }
+  const s25=sum('submitted',1);
+  if(P.length&&S['Submitted']&&s25!==S['Submitted'][1])
+    out.push(['warn',`Submitted 2025 is ${fmt(S['Submitted'][1])} in the SIS sheet and ${fmt(s25)} in the Classification sheet; the funnel uses the SIS figure.`]);
+  const docs=S['Documents']||[0,0];
+  if(docs[0]>dp[0]) out.push(['warn',`Documents (${fmt(docs[0])}) exceed Down payment (${fmt(dp[0])}). ${sch?`Adding the ${fmt(sch)} scholarship students gives ${fmt(dp[0]+sch)}${dp[0]+sch>=docs[0]?', which covers it':''}.`:''}`]);
+  const sub=S['Submitted']||[0,0], ratio=sub[1]/(SEASON_RATIO.submitted*850);
+  if(ratio>=0.9) out.push(['warn',`The 2025 comparison column shows ${fmt(sub[1])} submitted, about ${(ratio*100).toFixed(0)}% of last season's final total (${fmt(Math.round(SEASON_RATIO.submitted*850))}). It may be an end-of-season figure rather than the same date last year — confirm before reading growth rates as same-day comparisons.`]);
+  out.push(['ok',`“Foreign” counts rows labelled Foreign in the SIS sheet (conditional, final accept, instalment). “TA Foreign Certificates” (${fmt((DATA.certs||{})['TA Foreign Certificates']||0)}) counts foreign <i>certificates</i>, not nationality.`]);
+  el.innerHTML=out.map(([c,t])=>`<li class="${c}">${t}</li>`).join('');
+}
+let trendChart;
+function snapshotHistory(){
+  try{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(DATA.reportDate||'')) return;
+    const h=JSON.parse(localStorage.getItem('adm_history_v1')||'{}');
+    const pick=n=>(DATA.stages[n]||[0])[0];
+    h[DATA.reportDate]={a:pick('Total Applied'),s:pick('Submitted'),p:pick('Paid Fees'),d:pick('Down payment')};
+    localStorage.setItem('adm_history_v1',JSON.stringify(h));
+  }catch(e){}
+}
+function renderTrend(){
+  const note=document.getElementById('trendNote'), tbl=document.getElementById('trendTable'), cv=document.getElementById('trendChart');
+  if(!note) return;
+  let h={}; try{ h=JSON.parse(localStorage.getItem('adm_history_v1')||'{}'); }catch(e){}
+  const dates=Object.keys(h).sort();
+  if(trendChart){ trendChart.destroy(); trendChart=null; }
+  if(dates.length<2){
+    note.textContent=`History builds automatically each time a new daily report is loaded in this browser (${dates.length} report stored so far). From the second report on, a trend line and day-over-day change appear here.`;
+    cv.parentElement.style.display='none'; tbl.innerHTML=''; return;
+  }
+  cv.parentElement.style.display='';
+  note.textContent=`${dates.length} daily reports stored in this browser. Day-over-day change compares the two latest.`;
+  const ser=[['Submitted','s','#0F1E33'],['Paid fees','p','#B8892B'],['Down payment','d','#2E7D5B']];
+  trendChart=new Chart(cv,{type:'line',data:{labels:dates,datasets:ser.map(([l,k,c])=>({label:l,data:dates.map(x=>h[x][k]),borderColor:c,backgroundColor:c,tension:.25}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+  const a=h[dates[dates.length-2]], b=h[dates[dates.length-1]];
+  tbl.innerHTML=ser.concat([['Total applied','a','']]).map(([l,k])=>{const dv=b[k]-a[k];return `<span class="delta-chip ${dv>=0?'chip-up':'chip-down'}">${l}: ${dv>=0?'▲ +':'▼ −'}${fmt(Math.abs(dv))}</span>`;}).join(' ');
+}
+
 /* ---------------- render everything ---------------- */
 function render(){
   const total = (DATA.stages['Total Applied']||[0])[0] || 1;
   document.getElementById('reportDate').textContent = 'Daily Report · '+DATA.reportDate;
   renderConversion(); renderTarget(); renderThreeWay(); wireThreeWayToggle(); renderPrograms(); wireProgToggle();
+  renderNote04(); renderLeads(); renderNotes(); snapshotHistory(); renderTrend();
 
   // KPI band — auto: يعرض كل مرحلة موجودة في التقرير
   const KPI_LABELS={
@@ -1062,7 +1198,16 @@ function render(){
   };
   const KPI_HIDE=['Documents','Withdrew'];
   const kpiDefs=Object.keys(DATA.stages).filter(k=>!KPI_HIDE.includes(k)).map(k=>[k,(KPI_LABELS[k]||k.toUpperCase())]);
+  FOREIGN_STAGES.forEach(f=>{
+    const i=kpiDefs.findIndex(x=>x[0]===f.stage);
+    if(f.kpi && i>=0) kpiDefs.splice(i+1,0,['F:'+f.stage,f.label]);
+  });
   document.getElementById('kpiRow').innerHTML = kpiDefs.map(([key,lab])=>{
+    if(key.startsWith('F:')){
+      const [fa,fb]=(DATA.foreign||{})[key.slice(2)]||[0,0];
+      return `<div class="kpi kpi-foreign"><div class="lab">${lab}</div><div class="val">${fmt(fa)}</div>
+        <div class="delta up">2025: ${fmt(fb)} · included in Down payment</div></div>`;
+    }
     const [y26,y25]=DATA.stages[key]||[0,0];
     const g=growth(y26,y25), up=g>=0;
     return `<div class="kpi"><div class="lab">${lab}</div>
@@ -1083,7 +1228,7 @@ function render(){
     const w26=Math.max(y26/maxVal*100,3), w25=Math.max(y25/maxVal*100,1.5);
     const row=document.createElement('div');
     row.innerHTML=`<div class="stage-top">
-        <div class="stage-name">${s.name} <span>${s.note}</span>${chip}</div>
+        <div class="stage-name">${s.name} <span>${s.note}</span>${chip}${(()=>{const fg=(DATA.foreign||{})[s.name]; return fg?`<span class="foreign-badge">🌍 Foreign / أجانب: ${fmt(fg[0])}<span class="fg25">2025: ${fmt(fg[1])}</span></span>`:'';})()}</div>
         <div class="stage-fig"><b>${fmt(y26)}</b> &nbsp;·&nbsp; 2025: ${fmt(y25)}</div></div>
       <div class="track"><div class="bar-25" style="width:${w25}%"></div>
         <div class="bar-26" data-w="${w26}" style="width:0%">
@@ -1099,7 +1244,7 @@ function render(){
     const [y26,y25]=DATA.stages[s.name]||[0,0];
     const diff=y26-y25, g=growth(y26,y25), cls=g>=0?'g-up':'g-down';
     tb.insertAdjacentHTML('beforeend',
-      `<tr><td>${s.name}</td><td class="num">${fmt(y26)}</td><td class="num">${fmt(y25)}</td>
+      `<tr><td>${s.name}${(()=>{const fg=(DATA.foreign||{})[s.name]; return fg?` <span class="foreign-badge">🌍 Foreign: ${fmt(fg[0])}</span>`:'';})()}</td><td class="num">${fmt(y26)}</td><td class="num">${fmt(y25)}</td>
        <td class="num ${cls}">${diff>=0?'+':'−'}${fmt(Math.abs(diff))}</td>
        <td class="num ${cls}">${g>=0?'+':'−'}${Math.abs(g).toFixed(1)}%</td></tr>`);
   });
